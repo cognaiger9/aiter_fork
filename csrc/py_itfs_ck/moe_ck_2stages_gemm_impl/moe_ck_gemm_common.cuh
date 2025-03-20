@@ -189,7 +189,7 @@ void ck_moe_stage2_gemm(const hipStream_t &stream, int tokens, int sorted_size, 
     static constexpr ck::index_t NPerBlock = 128;
     static constexpr ck::index_t MNPerXDL = 32;
     static constexpr ck::index_t KPerBlock = 128 / sizeof(A0DataType);
-    static constexpr ck::index_t MXDLPerWave = MPerBlock <= 64 ? MPerBlock / 32 : MPerBlock / 64; 
+    static constexpr ck::index_t MXDLPerWave = MPerBlock <= 64 ? MPerBlock / 32 : MPerBlock / 64;
     static constexpr ck::index_t NXDLPerWave = MPerBlock <= 64 ? 1 : 2; 
     static constexpr ck::index_t CShuffleMXDLPerWave = MXDLPerWave;
     static constexpr ck::index_t CShuffleNLane = NPerBlock / 2 / NXDLPerWave;

@@ -20,9 +20,11 @@ def run_torch(x, weight, x_scale, w_scale, dtype=torch.bfloat16):
     n = weight.shape[0]
     scale_n =  (n + block_shape_n - 1) // block_shape_n
     scale_k =  (k + block_shape_k - 1) // block_shape_k
+    # x -> (m, number of block in k-dim, block size in k) and x_scale -> (m, number of block in k-dim, 1)
     x = x.to(x_scale.dtype).view(m, k//block_shape[1], block_shape[1]) * x_scale.unsqueeze(-1)
     x = x.view(m, k)
 
+    # w_scale -> shape (scale_n * block_shape_n, scale_k * block_shape_k)
     w_scale = rearrange(w_scale.view(-1, 1).repeat(1, block_shape_n*block_shape_k).view(scale_n, scale_k, block_shape_n, block_shape_k),
                               'num_blk_n num_blk_k blk_n blk_k -> (num_blk_n blk_n) (num_blk_k blk_k)')
     w_scale = w_scale[:n, :k]

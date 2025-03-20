@@ -64,7 +64,7 @@ def torch_moe_stage1(hidden_states,
 
 
 @perftest(num_iters=3)
-def torch_moe_stage2(hidden_states,
+def torch_moe_stage2(hidden_states, # (token_num, inter_dim)
                      w1,  # E, inter_dim*2, model_dim
                      w2,  # E, model_dim, inter_dim
                      topk_weights, topk_ids,
@@ -97,7 +97,7 @@ def torch_moe_stage2(hidden_states,
     for E_id in range(w1.shape[0]):
         mask = topk_ids == E_id
         if mask.sum():
-            sub_tokens = hidden_states[mask]
+            sub_tokens = hidden_states[mask] # (selected_token, inter_dim)
             act_input = sub_tokens @ (w2[E_id].transpose(0, 1))
             out[mask] = act_input
     return (out * topk_weights.view(token_num, -1, 1)).sum(1).to(dtype)
@@ -356,10 +356,16 @@ def test_fmoe(dtype, token, model_dim, inter_dim, E, topk, quant='No', use_g1u1=
                   msg=f'ck_moe_fused_2stages:{us:.2f} us, {token*model_dim*inter_dim*topk*2/us/1000/1000:.2f} tflops......(No quant)')
 
 
-for dtype in [torch.float16]:
-    for m in [32, 128]:
-        for dim in [8192]:
-            for inter_dim in [6144, 16384]:
-                expert, topk = 8, 2
-                test_fmoe(dtype, m, dim, inter_dim, expert, topk,
-                          quant='fp8quant', use_g1u1=True)
+#for dtype in [torch.float16]:
+#    for m in [32, 128]:
+#        for dim in [8192]:
+#            for inter_dim in [6144, 16384]:
+#                expert, topk = 8, 2
+#                test_fmoe(dtype, m, dim, inter_dim, expert, topk,
+#                          quant='fp8quant', use_g1u1=True)
+
+for dtype in [torch.bfloat16]:
+    for m in [1, 2, 4, 8, 16, 32, 64, 128]:
+        for dim in [7168]:
+            for idim in [256]:
+                test_fmoe(dtype, m, dim, idim, 256, 8, quant='No', use_g1u1=True)

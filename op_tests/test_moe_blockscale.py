@@ -12,7 +12,6 @@ from einops import rearrange
 
 BLOCK_SIZE_M = 32
 
-
 def torch_moe_blockscale(hidden_states,
                          w1,  # [expert, inter_dim*2, model_dim]
                          w2,  # [expert, model_dim, inter_dim]
