@@ -337,12 +337,15 @@ def compile_ops(_md_name: str, fc_name: Optional[str] = None):
             try:
                 module = None
                 if PREBUILD_KERNELS:
+                    print("load module from aiter_")
                     if hasattr(aiter_, loadName):
                         module = aiter_
                 if module is None:
                     module = get_module(custom_build_args.get('md_name',
                                                               md_name))
+                    print(f"load module from {md_name}")
             except Exception as e:
+                print("aiter_ not found, build from source...")
                 d_args = get_args_of_build(md_name)
                 d_args.update(custom_build_args)
 
