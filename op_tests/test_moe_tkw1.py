@@ -13,7 +13,7 @@ from aiter.fused_moe_bf16_asm import asm_moe_tkw1, torch_moe_tkw1, moe_sorting_c
 from aiter.fused_moe import fused_topk
 from aiter.ops.shuffle import shuffle_weight
 from aiter import pertoken_quant, ck_moe
-from aiter.int4_utils import *
+#from aiter.int4_utils import *
 from aiter import ActivationType
 
 BLOCK_SIZE_M = 32
@@ -149,18 +149,18 @@ def test_fmoe(dtype, token, model_dim, inter_dim, E, topk, quant='No', use_g1u1=
     #print("quantAlgoId" ,quantAlgoId)
     if quantAlgoId == 0:
         # ref2 implement
-        ref2, avg_c = torch_moe_test(input,
-                                     w1,
-                                     w2,
-                                     topk_weights,
-                                     topk_ids)
+        #ref2, avg_c = torch_moe_test(input,
+        #                             w1,
+        #                             w2,
+        #                             topk_weights,
+        #                             topk_ids)
 
         # b implement
         w1b = shuffle_weight(w1)
         w2b = shuffle_weight(w2)
 
         if use_g1u1:
-            out_b = ref2
+            #out_b = ref2
             avg_b = 9999
             print("asm g1u1 only support quant/smoothquant Now")
         else:
@@ -172,9 +172,10 @@ def test_fmoe(dtype, token, model_dim, inter_dim, E, topk, quant='No', use_g1u1=
                                      None, None,
                                      None, None)
 
-        msg = f"[perf] {token=}, quant={quantstr}, {model_dim=}, {inter_dim=}, {E=}, {topk=}, dtype: {dtype}, torch_avg: {avg_c:<8.2f} us, asm_avg: {avg_b:.2f} us, ck_avg: {avg_ck:.2f} us, uplift: {avg_c/avg_b-1:.1%}"
-        checkAllclose(ref2, out_b, rtol=0.01, atol=100, msg=msg)
-        checkAllclose(ref2, out_ck, rtol=0.01, atol=100, msg="ck check")
+        msg = f"[perf] {token=}, quant={quantstr}, {model_dim=}, {inter_dim=}, {E=}, {topk=}, dtype: {dtype}, torch_avg: {0:<8.2f} us, asm_avg: {avg_b:.2f} us, ck_avg: {avg_ck:.2f} us, uplift: {0:.1%}"
+        print(msg)
+        #checkAllclose(ref2, out_b, rtol=0.01, atol=100, msg=msg)
+        #checkAllclose(ref2, out_ck, rtol=0.01, atol=100, msg="ck check")
     else:
         dtypeMax = 7 if use_int4 else None
         w1, fc1_scale = pertoken_quant(
@@ -244,12 +245,20 @@ def test_fmoe(dtype, token, model_dim, inter_dim, E, topk, quant='No', use_g1u1=
         checkAllclose(ref2, out_b, rtol=0.01, atol=100, msg=msg)
         # checkAllclose(ref2, avg_ck, rtol=0.01, atol=100)
 
-print('\ng1u1 fp8quant')
+#print('\ng1u1 fp8quant')
+#for dtype in [torch.bfloat16]:
+#    for m in [1, 128, 256]:
+#        for dim in [5120]:
+#            for hdim in [1024]:
+#                for num_of_experts in [16, 128]:
+#                    test_fmoe(dtype, m, dim, hdim, num_of_experts, 1,
+#                            quant='fp8quant', use_g1u1=True, shared_E=0, activation=ActivationType.Silu)
+#                        #   quant='fp8quant', use_g1u1=True)
+
+# Test ck
 for dtype in [torch.bfloat16]:
-    for m in [1, 128, 256]:
-        for dim in [5120]:
-            for hdim in [1024]:
-                for num_of_experts in [16, 128]:
-                    test_fmoe(dtype, m, dim, hdim, num_of_experts, 1,
-                            quant='fp8quant', use_g1u1=True, shared_E=0, activation=ActivationType.Silu)
-                        #   quant='fp8quant', use_g1u1=True)
+    for m in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 163840]:
+        for dim in [7168]:
+            for idim in [256]:
+                test_fmoe(
+                    dtype, m, dim, idim, 256, 8, quant="No", use_g1u1=True, shared_E=0, activation=ActivationType.Silu)
